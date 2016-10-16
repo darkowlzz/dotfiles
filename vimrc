@@ -24,9 +24,10 @@ Plugin 'pangloss/vim-javascript'
 Plugin 'digitaltoad/vim-jade'
 Plugin 'bling/vim-airline'
 Plugin 'mhinz/vim-startify'
-Plugin 'valloric/youcompleteme'
 Plugin 'yggdroot/indentline'
-Plugin 'tpope/vim-rails'
+Plugin 'scrooloose/nerdcommenter'
+Plugin 'L9'
+Plugin 'othree/vim-autocomplpop'
 
 call vundle#end()            " required
 filetype plugin indent on    " required
