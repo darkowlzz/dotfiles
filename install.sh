@@ -3,7 +3,6 @@
 # Default config
 LOGIN=false
 UPDATE=false
-MANAGER=false
 VUNDLE=false
 GITCONFIG=false
 GITIGNORE=false
@@ -20,8 +19,6 @@ do
       ;;
     --update) UPDATE=true # Update package manager list
       ;;
-    --managers) MANAGER=true # Install language managers like nvm, rvm
-      ;;
     --vundle) VUNDLE=true # Install Vundle and its plugins
       ;;
     --gitconfig) GITCONFIG=true # Add gitconfig
@@ -35,7 +32,6 @@ do
     --all) # Apply all the options
       LOGIN=true
       UPDATE=true
-      MANAGER=true
       VUNDLE=true
       GITCONFIG=true
       GITIGNORE=true
@@ -120,13 +116,13 @@ fi
 # bashrc
 if $DND; then
   # Not modifying the existing bashrc
-  ln -sf ${BASEDIR}/bashrc ~/.bashrc2
+  ln -sf ${BASEDIR}/bashrc.sh ~/.bashrc2
   source_dnd="source ~/.bashrc2";
   if ! grep -F "$source_dnd" ~/.bashrc; then
     echo $source_dnd >> ~/.bashrc
   fi
 else
-  ln -sf ${BASEDIR}/bashrc ~/.bashrc
+  ln -sf ${BASEDIR}/bashrc.sh ~/.bashrc
 fi
 
 # vimrc
@@ -173,29 +169,6 @@ if [ ! -f ~/.git-prompt.sh ]; then
   curl https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh -o ~/.git-prompt.sh
 else
   echo ".git-prompt.sh exists";
-fi
-
-# nvm
-if $MANAGER; then
-  echo "Installing nvm";
-  if [ ! -d ~/.nvm ]; then
-    curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.31.0/install.sh | bash
-  else
-    echo "nvm is already installed";
-  fi
-fi
-
-# rvm
-if $MANAGER; then
-  echo "Installing rvm";
-  if ! hash rvm 2> /dev/null; then
-    curl -L https://get.rvm.io | bash -s stable --ruby
-  else
-    echo "rvm is already installed";
-  fi
-  # irbrc
-  echo "Setting up irbrc";
-  ln -sf ${BASEDIR}/irbrc ~/.irbrc
 fi
 
 # No login option
