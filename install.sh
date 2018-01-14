@@ -1,179 +1,211 @@
 #!/bin/bash
 
-# Default config
-LOGIN=false
-UPDATE=false
-VUNDLE=false
-GITCONFIG=false
-GITIGNORE=false
-CMDLINETOOLS=false
-DND=false
+# Exit immediately if a command exits with a non-zero status.
+set -e
+
 BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-platform=$(uname);
+platform=$(uname)
 
-# Parse the commandline args and set config
-while test $# -gt 0
-do
-  case "$1" in
-    --login) LOGIN=true # Relogin after the script is run
-      ;;
-    --update) UPDATE=true # Update package manager list
-      ;;
-    --vundle) VUNDLE=true # Install Vundle and its plugins
-      ;;
-    --gitconfig) GITCONFIG=true # Add gitconfig
-      ;;
-    --gitignore) GITIGNORE=true # Add gitignore
-      ;;
-    --clt) CMDLINETOOLS=true # Install command line tools
-      ;;
-    --dnd) DND=true # Do not replace the existing bashrc
-      ;;
-    --all) # Apply all the options
-      LOGIN=true
-      UPDATE=true
-      VUNDLE=true
-      GITCONFIG=true
-      GITIGNORE=true
-      CMDLINETOOLS=true
-      ;;
-  esac
-  shift
-done
+function main_help() {
+    cat << EOF
+Installation help doc
 
-function installcask() {
-  brew cask install "${@}" 2> /dev/null
+usage: install.sh <command>
+
+commands:
+    basic   Apply basic shell configurations and auto-completion
+    dev     Setup development configurations (git, vim)
+    tools   Installs various tools (gnupg, tree, lpass)
+    help    This help doc
+EOF
 }
 
-if [[ $platform == 'Darwin' ]]; then
-  if hash brew 2> /dev/null; then
-    echo "brew found";
+# basic adds the config loader into the existing bashrc and installs bash-completion.
+function install_basic() {
+    echo
+    echo "=== basic ==="
 
-    brew tap homebrew/completions
+    # Install shell completion.
+    bash_completion
 
-    if $UPDATE; then
-      echo "Updating brew formula list";
-      brew update
+    local bash_config_file
+
+    # bash config is stored in .bash_profile in macOS.
+    if [[ $platform == "Darwin" ]]; then
+        bash_config_file=$HOME/.bash_profile
+    elif [[ $platform == "Linux" ]]; then
+        bash_config_file=$HOME/.bashrc
     fi
 
-    if $CMDLINETOOLS; then
-      echo "Installing commandline tools";
-      brew install vim \
-                   git \
-                   byobu \
-                   ack \
-                   tree \
-                   wget \
-                   multitail \
-                   vagrant-completion \
-                   ssh-copy-id
-
-      echo "Installing homebrew cask";
-      brew tap caskroom/cask
-
-      installcask iterm2
+    # Add script loader to the default bashrc.
+    local source_mybashrc
+    source_mybashrc="source ${BASEDIR}/mybashrc.bash"
+    if ! grep -F "$source_mybashrc" $bash_config_file; then
+        echo $source_mybashrc >> $bash_config_file
+    else
+        echo "sourcing mybashrc.bash already exists in ${bash_config_file}"
     fi
 
-    # Source bashrc string
-    source_bashrc="source ~/.bashrc";
-    # Search for bashrc source line
-    if ! grep -F "$source_bashrc" ~/.bash_profile; then
-      # Make bash_profile source bashrc
-      echo $source_bashrc >> ~/.bash_profile
+    echo
+    echo "NOTE: If completion isn't enabled automatically, enable it from ~/.bashrc"
+}
+
+# package_manager_check checks if a package manager is installed or not.
+# If the platform specific package manager is not installed, quits the program.
+function package_manager_check() {
+    if [[ $platform == "Darwin" ]]; then
+        if ! hash brew 2> /dev/null; then
+            echo
+            echo "brew not found, install brew and rerun the command"
+            exit
+        fi
+    fi
+}
+
+# bash_completion installs bash-completion and downloads various completion scripts.
+function bash_completion() {
+    echo
+    echo "=== bash_completion ==="
+
+    package_manager_check
+
+    # Install bash-completion
+    if [[ $platform == "Darwin" ]]; then
+        brew install bash-completion
+        completionPath="$(brew --prefix)/etc/bash_completion.d"
+    elif [[ $platform == "Linux" ]]; then
+        apt-get update
+        # Ubuntu docker image comes without curl.
+        apt-get install curl bash-completion
+        completionPath="/etc/bash_completion.d"
     fi
 
-  else
-    echo "brew not installed"
-    exit
-  fi
+    # Install git-completion.
+    local git_completion_path
+    git_completion_path=${completionPath}/git-completion.bash
+    if [[ ! -f $git_completion_path ]]; then
+        curl -o $git_completion_path https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash
+    else
+        echo "git-completion.bash exists";
+    fi
 
-elif [[ $platform == 'Linux' ]]; then
-  echo "You are on Linux";
-  # For ubuntu only
-  if $UPDATE; then
-    echo "Updating package list";
-    sudo apt-get update
-  fi
+    # Add more completion scripts below.
+}
 
-  if $CMDLINETOOLS; then
-    echo "Installing commandline tools";
-    sudo apt-get install vim \
-                         git \
-                         byobu \
-                         ack-grep \
-                         tree \
-                         wget \
-                         multitail
+# dev installs development tools and configurations.
+function install_dev() {
+    echo
+    echo "=== dev env setup ==="
 
-    # Rename ack-grep to ack
-    sudo dpkg-divert --local --divert /usr/bin/ack --rename --add /usr/bin/ack-grep
+    # Install git, neovim
+    if [[ $platform == "Darwin" ]]; then
+        brew install git neovim
+    elif [[ $platform == "Linux" ]]; then
+        # Before adding PPA for neovim
+        apt-get install software-properties-common --fix-missing
+        add-apt-repository ppa:neovim-ppa/stable
+        apt-get update
+        apt-get install git neovim
+    fi
 
-    # Vagrant-completion
-    sudo wget https://raw.github.com/kura/vagrant-bash-completion/master/etc/bash_completion.d/vagrant -O /etc/bash_completion.d/vagrant
-  fi
-fi
+    gitconfig
+    neovim_config
+    vimconfig
 
-# bashrc
-if $DND; then
-  # Not modifying the existing bashrc
-  ln -sf ${BASEDIR}/bashrc.sh ~/.bashrc2
-  source_dnd="source ~/.bashrc2";
-  if ! grep -F "$source_dnd" ~/.bashrc; then
-    echo $source_dnd >> ~/.bashrc
-  fi
-else
-  ln -sf ${BASEDIR}/bashrc.sh ~/.bashrc
-fi
+    echo
+    echo "Development environment ready!"
+}
 
-# vimrc
-echo "Setting up vimrc";
-ln -sf ${BASEDIR}/vimrc ~/.vimrc
+function neovim_config() {
+    echo "Linking neovim config to vimrc"
+    mkdir -p ~/.config/nvim/
+    cat > ~/.config/nvim/init.vim << EOF
+set runtimepath^=~/.vim runtimepath+=~/.vim/after
+let &packpath = &runtimepath
+source ~/.vimrc
+EOF
+    vim +PluginInstall +qall
+}
 
-# ackrc
-echo "Setting up ackrc";
-ln -sf ${BASEDIR}/ackrc ~/.ackrc
+# gitconfig creates symlinks of gitconfig and gitignore files in $HOME.
+# This would overwrite any existing gitconfig and gitignore.
+function gitconfig() {
+    echo "Setting up gitconfig"
+    ln -sf ${BASEDIR}/gitconfig ~/.gitconfig
 
-# install vundle
-if $VUNDLE; then
-  echo "Installing Vundle";
-  git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
+    echo "Setting up gitignore"
+    ln -sf ${BASEDIR}/gitignore ~/.gitignore
+}
 
-  # install vim plugins
-  echo "Installing vim plugins";
-  vim +PluginInstall +qall
-fi
+# vimconfig creates symlink of vimrc and installs vundle plugin manager and all
+# the plugins.
+function vimconfig() {
+    echo "Setting up vimrc"
+    ln -sf ${BASEDIR}/vimrc ~/.vimrc
 
-# gitconfig
-if $GITCONFIG; then
-  echo "Setting up gitconfig";
-  ln -sf ${BASEDIR}/gitconfig ~/.gitconfig
-fi
+    echo "Installing Vundle";
+    if [ ! -d ~/.vim/bundle/Vundle.vim ]; then
+        git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
+    else
+        echo "Vundle already cloned at ~/.vim/bundle/Vundle.vim"
+    fi
 
-# gitignore
-if $GITIGNORE; then
-  echo "Setting up gitignore";
-  ln -sf ${BASEDIR}/gitignore ~/.gitignore
-fi
+    # Install vim plugins.
+    echo "Installing vim plugins";
+    nvim +PluginInstall +qall
+}
 
-# git-completion
-echo "Downloading git-completion.bash";
-if [ ! -f ~/git-completion.bash ]; then
-  curl -o ~/git-completion.bash https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash
-else
-  echo "git-completion.bash exists";
-fi
+# install_tools installs various tools for day-to-day needs.
+function install_tools() {
+    # Install gnupg, tree, lpass
+    if [[ $platform == "Darwin" ]]; then
+        brew install gnupg2 tree lastpass-cli --with-pinentry
+    elif [[ $platform == "Linux" ]]; then
+        # lpass has to be built manually.
+        apt-get install gnupg2 tree
+    fi
+}
 
-# git-prompt
-echo "Downloading git-prompt.sh";
-if [ ! -f ~/.git-prompt.sh ]; then
-  curl https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh -o ~/.git-prompt.sh
-else
-  echo ".git-prompt.sh exists";
-fi
+function main() {
+    local confirm
 
-# No login option
-if $LOGIN; then
-  /bin/bash --login
-else
-  echo "Not logging into a new shell";
-fi
+    # If there's no argument, print the main help.
+    if [ $# == 0 ]; then
+        main_help
+        exit
+    fi
+
+    # Parse the commandline args
+    while test $# -gt 0
+    do
+        case "$1" in
+            basic)
+                echo "Basic shell customization would be applied. Continue?(y/N)"
+                read confirm
+                if [ $confirm == "y" ]; then
+                    echo "Applying bash configurations..."
+                    install_basic
+                fi
+                ;;
+            dev)
+                echo "Development configurations would be applied and development tools would be installed. Continue?(y/N)"
+                read confirm
+                if [ $confirm == "y" ]; then
+                    echo "Setting up dev env..."
+                    install_dev
+                fi
+                ;;
+            tools)
+                install_tools
+                ;;
+            *)
+                main_help
+                ;;
+        esac
+        # Shift the argument after use.
+        shift
+    done
+}
+
+
+main "$@"

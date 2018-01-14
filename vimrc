@@ -1,5 +1,5 @@
-set shell=/bin/bash
 let mapleader = ' '
+set number
 set nocompatible              " be iMproved, required
 filetype off                  " required
 
@@ -10,24 +10,10 @@ call vundle#begin()
 " let Vundle manage Vundle, required
 Plugin 'VundleVim/Vundle.vim'
 Plugin 'scrooloose/nerdtree'
-Plugin 'othree/html5.vim'
-Plugin 'vim-ruby/vim-ruby'
-Plugin 'hashivim/vim-vagrant'
-Plugin 'puppetlabs/puppet-syntax-vim'
-Plugin 'ekalinin/Dockerfile.vim'
-Plugin 'gabrielelana/vim-markdown'
 Plugin 'lanox/lanox-vim-theme'
-Plugin 'danro/rename.vim'
-Plugin 'evanmiller/nginx-vim-syntax'
-Plugin 'tpope/vim-git'
-Plugin 'pangloss/vim-javascript'
-Plugin 'digitaltoad/vim-jade'
 Plugin 'bling/vim-airline'
-Plugin 'mhinz/vim-startify'
-Plugin 'yggdroot/indentline'
-Plugin 'scrooloose/nerdcommenter'
-Plugin 'L9'
-Plugin 'othree/vim-autocomplpop'
+Plugin 'fatih/vim-go'
+Plugin 'AndrewRadev/splitjoin.vim'
 
 call vundle#end()            " required
 filetype plugin indent on    " required
@@ -42,9 +28,11 @@ set rnu
 
 set autoindent
 
+set autowrite
+
 " 1 tab == 2 spaces
 set shiftwidth=2
-set tabstop=2
+"set tabstop=2
 
 set softtabstop=2
 
@@ -139,7 +127,7 @@ nnoremap <leader>h :noh<cr>
 nnoremap <leader>tp :set invpaste paste?<cr>
 
 " Reload vimrc
-nnoremap <leader>r :source ~/.vimrc<cr>
+nnoremap <leader>rl :source ~/.config/nvim/init.vim<cr>
 
 " Move tab 1 position to right
 nnoremap <leader>m= :tabmove +1<cr>
@@ -153,5 +141,22 @@ nnoremap <leader>ws /\s\+$<cr>
 " Quit all
 nnoremap <leader>qq :qall<cr>
 
+" vim-go close
+nnoremap <leader>a :cclose<cr>
+
 " Cabbrev for :tabnew
 ca tn tabnew
+
+" vim-go next and previous
+map <C-n> :cnext<cr>
+map <C-m> :cprevious<cr>
+
+" vim-go build and run
+autocmd FileType go nmap <leader>b <Plug>(go-build)
+autocmd FileType go nmap <leader>r <Plug>(go-run)
+
+" vim-go goimport on save
+let g:go_fmt_command = "goimports"
+
+" enable scrolling with scroll wheel (iTerm 2)
+set mouse=a
