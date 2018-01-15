@@ -1,0 +1,19 @@
+{
+    "workbench.colorTheme": "One Dark Pro",
+    "vim.enableNeovim": true,
+    "window.zoomLevel": 1,
+    "vim.hlsearch": true,
+    "vim.ignorecase": true,
+    "editor.lineNumbers": "relative",
+    "editor.rulers": [
+        80,
+        120
+    ],
+    "files.insertFinalNewline": true,
+    "editor.renderWhitespace": "none",
+    "editor.renderControlCharacters": false,
+    "editor.quickSuggestionsDelay": 1,
+    "workbench.sideBar.location": "left",
+    "C_Cpp.intelliSenseEngine": "Default",
+    "C_Cpp.clang_format_formatOnSave": true
+}

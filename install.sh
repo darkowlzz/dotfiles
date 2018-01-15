@@ -3,8 +3,8 @@
 # Exit immediately if a command exits with a non-zero status.
 set -e
 
-BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-platform=$(uname)
+readonly BASEDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly PLATFORM=$(uname)
 
 function main_help() {
     cat << EOF
@@ -31,9 +31,9 @@ function install_basic() {
     local bash_config_file
 
     # bash config is stored in .bash_profile in macOS.
-    if [[ $platform == "Darwin" ]]; then
+    if [[ $PLATFORM == "Darwin" ]]; then
         bash_config_file=$HOME/.bash_profile
-    elif [[ $platform == "Linux" ]]; then
+    elif [[ $PLATFORM == "Linux" ]]; then
         bash_config_file=$HOME/.bashrc
     fi
 
@@ -53,7 +53,7 @@ function install_basic() {
 # package_manager_check checks if a package manager is installed or not.
 # If the platform specific package manager is not installed, quits the program.
 function package_manager_check() {
-    if [[ $platform == "Darwin" ]]; then
+    if [[ $PLATFORM == "Darwin" ]]; then
         if ! hash brew 2> /dev/null; then
             echo
             echo "brew not found, install brew and rerun the command"
@@ -70,10 +70,10 @@ function bash_completion() {
     package_manager_check
 
     # Install bash-completion
-    if [[ $platform == "Darwin" ]]; then
+    if [[ $PLATFORM == "Darwin" ]]; then
         brew install bash-completion
         completionPath="$(brew --prefix)/etc/bash_completion.d"
-    elif [[ $platform == "Linux" ]]; then
+    elif [[ $PLATFORM == "Linux" ]]; then
         apt-get update
         # Ubuntu docker image comes without curl.
         apt-get install curl bash-completion
@@ -97,20 +97,29 @@ function install_dev() {
     echo
     echo "=== dev env setup ==="
 
-    # Install git, neovim
-    if [[ $platform == "Darwin" ]]; then
+    local vscode_settings
+
+    # Install git, neovim, and set vscode settings path.
+    if [[ $PLATFORM == "Darwin" ]]; then
         brew install git neovim
-    elif [[ $platform == "Linux" ]]; then
-        # Before adding PPA for neovim
+        vscode_settings="$HOME/Library/Application Support/Code/User"
+    elif [[ $PLATFORM == "Linux" ]]; then
+        # Install neovim via ppa.
         apt-get install software-properties-common --fix-missing
         add-apt-repository ppa:neovim-ppa/stable
         apt-get update
         apt-get install git neovim
+        vscode_settings=$HOME/.config/Code/User
     fi
 
     gitconfig
     neovim_config
     vimconfig
+
+    # If vscode config directory exists, symlink the settings.
+    if [[ -d $vscode_settings ]]; then
+        ln  -sf ${BASEDIR}/vscode_settings.json "${vscode_settings}/settings.json"
+    fi
 
     echo
     echo "Development environment ready!"
@@ -158,9 +167,9 @@ function vimconfig() {
 # install_tools installs various tools for day-to-day needs.
 function install_tools() {
     # Install gnupg, tree, lpass
-    if [[ $platform == "Darwin" ]]; then
+    if [[ $PLATFORM == "Darwin" ]]; then
         brew install gnupg2 tree lastpass-cli --with-pinentry
-    elif [[ $platform == "Linux" ]]; then
+    elif [[ $PLATFORM == "Linux" ]]; then
         # lpass has to be built manually.
         apt-get install gnupg2 tree
     fi
