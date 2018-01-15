@@ -16,7 +16,7 @@ lpuser() {
 
 # Search for name.
 lpsearch() {
-  lpass ls | grep $1
+  lpass ls | grep -i $1
 }
 
 # Search and copy password to clipboard.
