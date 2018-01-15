@@ -131,17 +131,17 @@ EOF
 # This would overwrite any existing gitconfig and gitignore.
 function gitconfig() {
     echo "Setting up gitconfig"
-    ln -sf ${BASEDIR}/gitconfig ~/.gitconfig
+    ln -sf ${BASEDIR}/.gitconfig ~/.gitconfig
 
     echo "Setting up gitignore"
-    ln -sf ${BASEDIR}/gitignore ~/.gitignore
+    ln -sf ${BASEDIR}/.gitignore ~/.gitignore
 }
 
 # vimconfig creates symlink of vimrc and installs vundle plugin manager and all
 # the plugins.
 function vimconfig() {
     echo "Setting up vimrc"
-    ln -sf ${BASEDIR}/vimrc ~/.vimrc
+    ln -sf ${BASEDIR}/.vimrc ~/.vimrc
 
     echo "Installing Vundle";
     if [ ! -d ~/.vim/bundle/Vundle.vim ]; then
