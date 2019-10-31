@@ -8,6 +8,7 @@
   ci = commit
   co = checkout
   st = status
+  br = branch -v --sort=committerdate
   lg = log --graph --pretty=format:'%C(yellow)%h%C(auto)%d%Creset %s %C(white)- %an, %ar%Creset'
 [color]
   ui = true
